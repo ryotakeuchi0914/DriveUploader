@@ -85,7 +85,7 @@ DriveUploader は、ブラウザを通じてファイルをアップロードし
 
 アプリケーションのスクリーンショットです：
 
-![デモ画面](./assets/verified.png)
+![デモ画面](./asset/verified.png)
 
 上記は、ファイルを選択して Google Drive にアップロードする画面の例です。
 
