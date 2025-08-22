@@ -1,103 +1,183 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from 'react';
+import { setCookie } from 'cookies-next';
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+export default function UploadPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLogoutLoading, setIsLogoutLoading] = useState<boolean>(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // 認証状態を確認する
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const res = await fetch('/api/auth-status', {
+          method: 'GET',
+        });
+        
+        if (res.ok) {
+          const { authenticated } = await res.json();
+          setIsAuthenticated(authenticated);
+        } else {
+          console.error('認証状態の確認に失敗しました');
+        }
+      } catch (error) {
+        console.error('認証確認エラー:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuthStatus();
+  }, []);
+
+  // Google認証を開始
+  const startAuth = () => {
+    const state = Math.random().toString(36).substring(2); // ランダムなstate値を生成
+    setCookie('state', state); // クッキーに保存
+
+    // 認証エンドポイントにリダイレクト
+    window.location.href = `/api/auth?state=${state}`;
+  };
+
+  // 認証を解除
+  const handleLogout = async () => {
+    setIsLogoutLoading(true);
+    try {
+      const res = await fetch('/api/auth-logout', {
+        method: 'POST',
+      });
+      
+      if (res.ok) {
+        setIsAuthenticated(false);
+        alert('認証が解除されました');
+      } else {
+        alert('認証の解除に失敗しました');
+      }
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+      alert('認証の解除中にエラーが発生しました');
+    } finally {
+      setIsLogoutLoading(false);
+    }
+  };
+
+  // ファイル選択
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    setFile(selectedFile || null);
+  };
+
+  // ファイルアップロード
+  const handleUpload = async () => {
+    if (!file) {
+      alert('ファイルを選択してください');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      alert('アップロードには認証が必要です');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      alert(`アップロード成功！ファイルID: ${result.fileId}`);
+    } else {
+      alert('アップロードに失敗しました');
+    }
+  };
+
+  // ローディング中の表示
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-700">読み込み中...</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-rows-[auto_1fr_auto] items-center justify-items-center min-h-screen p-8 pb-20 gap-8 sm:p-20 font-sans">
+      <h1 className="text-3xl font-bold text-center text-gray-800">Google Drive Uploader</h1>
+
+      {/* 認証状態表示 */}
+      <div className="w-full max-w-md bg-gray-100 p-4 rounded-lg shadow-sm">
+        <p className="text-center text-lg">
+          {isAuthenticated ? (
+            <span className="text-green-600 font-bold">認証済み ✅</span>
+          ) : (
+            <span className="text-red-600 font-bold">未認証 ❌</span>
+          )}
+        </p>
+        
+        {/* 認証解除ボタン */}
+        {isAuthenticated && (
+          <div className="mt-3 text-center">
+            <button
+              onClick={handleLogout}
+              disabled={isLogoutLoading}
+              className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 text-sm rounded-md transition duration-300 shadow"
+            >
+              {isLogoutLoading ? '処理中...' : '認証を解除する'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 認証ボタンまたはアップロード機能 */}
+      {!isAuthenticated ? (
+        <div className="text-center">
+          <p className="mb-4 text-gray-700">Google Driveへのアップロードには認証が必要です</p>
+          <button 
+            onClick={startAuth} 
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg"
+          >
+            Googleで認証する
+          </button>
+        </div>
+      ) : (
+        <div className="w-full max-w-md space-y-6">
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                id="file-upload"
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                aria-label="ファイルを選択してください" // アクセシビリティ対応
+              />
+              <button
+                type="button"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {file ? file.name : "ファイルを選択してください"}
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={handleUpload}
+            disabled={!file}
+            className={`w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg ${!file ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            アップロード
+          </button>
+        </div>
+      )}
     </div>
   );
 }
