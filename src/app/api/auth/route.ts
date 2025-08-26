@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   // 認証URLを生成
   const authorizationUrl = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
+    access_type: 'online',
     scope: ['https://www.googleapis.com/auth/drive.file'],
     state: state || '', // クエリパラメータから受け取ったstate値を設定
     prompt: 'select_account', // 必ずアカウント選択画面を表示
