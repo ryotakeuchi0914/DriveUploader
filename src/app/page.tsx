@@ -7,6 +7,7 @@ export default function UploadPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLogoutLoading, setIsLogoutLoading] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false); // アップロード中の状態を管理
 
   // 認証状態を確認する
   useEffect(() => {
@@ -15,7 +16,7 @@ export default function UploadPage() {
         const res = await fetch('/api/auth-status', {
           method: 'GET',
         });
-        
+
         if (res.ok) {
           const { authenticated } = await res.json();
           setIsAuthenticated(authenticated);
@@ -28,7 +29,7 @@ export default function UploadPage() {
         setIsLoading(false);
       }
     };
-    
+
     checkAuthStatus();
   }, []);
 
@@ -48,7 +49,7 @@ export default function UploadPage() {
       const res = await fetch('/api/auth-logout', {
         method: 'POST',
       });
-      
+
       if (res.ok) {
         setIsAuthenticated(false);
         alert('認証が解除されました');
@@ -81,19 +82,27 @@ export default function UploadPage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
+    setIsUploading(true); // アップロード中の状態を設定
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (res.ok) {
-      const result = await res.json();
-      alert(`アップロード成功！ファイルID: ${result.fileId}`);
-    } else {
-      alert('アップロードに失敗しました');
+      if (res.ok) {
+        const result = await res.json();
+        alert(`アップロード成功！ファイルID: ${result.fileId}`);
+      } else {
+        alert('アップロードに失敗しました');
+      }
+    } catch (error) {
+      console.error('アップロードエラー:', error);
+      alert('アップロード中にエラーが発生しました');
+    } finally {
+      setIsUploading(false); // アップロード終了
     }
   };
 
@@ -122,7 +131,7 @@ export default function UploadPage() {
             <span className="text-red-600 font-bold">未認証 ❌</span>
           )}
         </p>
-        
+
         {/* 認証解除ボタン */}
         {isAuthenticated && (
           <div className="mt-3 text-center">
@@ -141,8 +150,8 @@ export default function UploadPage() {
       {!isAuthenticated ? (
         <div className="text-center">
           <p className="mb-4 text-gray-700">Google Driveへのアップロードには認証が必要です</p>
-          <button 
-            onClick={startAuth} 
+          <button
+            onClick={startAuth}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg"
           >
             Googleで認証する
@@ -164,17 +173,19 @@ export default function UploadPage() {
                 type="button"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {file ? file.name : "ファイルを選択してください"}
+                {file ? file.name : 'ファイルを選択してください'}
               </button>
             </div>
           </div>
 
           <button
             onClick={handleUpload}
-            disabled={!file}
-            className={`w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg ${!file ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!file || isUploading} // アップロード中は無効化
+            className={`w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg ${
+              !file || isUploading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            アップロード
+            {isUploading ? 'アップロード中...' : 'アップロード'}
           </button>
         </div>
       )}
