@@ -8,6 +8,7 @@ export default function UploadPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLogoutLoading, setIsLogoutLoading] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false); // アップロード中の状態を管理
+  const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false); // 認証中の状態を管理
 
   // 認証状態を確認する
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function UploadPage() {
 
   // Google認証を開始
   const startAuth = () => {
+    setIsAuthenticating(true); // 認証中の状態を設定
     const state = Math.random().toString(36).substring(2); // ランダムなstate値を生成
     setCookie('state', state); // クッキーに保存
 
@@ -152,9 +154,12 @@ export default function UploadPage() {
           <p className="mb-4 text-gray-700">Google Driveへのアップロードには認証が必要です</p>
           <button
             onClick={startAuth}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg"
+            disabled={isAuthenticating} // 認証中は無効化
+            className={`bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg ${
+              isAuthenticating ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            Googleで認証する
+            {isAuthenticating ? '認証中...' : 'Googleで認証する'}
           </button>
         </div>
       ) : (
