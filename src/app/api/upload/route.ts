@@ -19,13 +19,21 @@ const oauth2Client = new google.auth.OAuth2(
 
 export async function POST(request: NextRequest) {
   try {
-    // フォームデータからファイルを取得
+    // フォームデータからファイルとフォルダIDを取得
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const folderId = formData.get('folderId') as string;
 
     if (!file) {
       return NextResponse.json(
         { error: 'ファイルが提供されていません' },
+        { status: 400 }
+      );
+    }
+
+    if (!folderId) {
+      return NextResponse.json(
+        { error: 'フォルダIDが指定されていません' },
         { status: 400 }
       );
     }
@@ -49,32 +57,6 @@ export async function POST(request: NextRequest) {
 
     // バッファからストリームを作成
     const fileStream = bufferToStream(buffer);
-
-    // 「DriveUploader」フォルダを検索
-    const folderName = 'DriveUploader';
-    const folderQuery = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-    const folderList = await drive.files.list({
-      q: folderQuery,
-      fields: 'files(id, name)',
-    });
-
-    let folderId: string;
-
-    if (folderList.data.files && folderList.data.files.length > 0) {
-      // フォルダが存在する場合、そのIDを取得
-      folderId = folderList.data.files[0].id!;
-    } else {
-      // フォルダが存在しない場合、新規作成
-      const folderMetadata = {
-        name: folderName,
-        mimeType: 'application/vnd.google-apps.folder',
-      };
-      const folder = await drive.files.create({
-        requestBody: folderMetadata,
-        fields: 'id',
-      });
-      folderId = folder.data.id!;
-    }
 
     // 同名ファイルが存在する場合のリネーム処理
     const originalFileName = file.name;

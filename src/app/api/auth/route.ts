@@ -13,10 +13,11 @@ export async function GET(request: NextRequest) {
 
   // 認証URLを生成
   const authorizationUrl = oauth2Client.generateAuthUrl({
-    access_type: 'online',
-    scope: ['https://www.googleapis.com/auth/drive.file'],
+    access_type: 'offline', // offline に変更してrefresh tokenを取得できるようにする
+    scope: ['https://www.googleapis.com/auth/drive.file'], // drive.fileスコープだけを使用
     state: state || '', // クエリパラメータから受け取ったstate値を設定
-    prompt: 'select_account', // 必ずアカウント選択画面を表示
+    prompt: 'consent', // 毎回同意画面を表示し、refresh tokenを確実に取得
+    include_granted_scopes: true // すでに許可されたスコープを含める
   });
 
   // Google認証ページにリダイレクト
